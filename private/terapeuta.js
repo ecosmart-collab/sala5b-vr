@@ -21,7 +21,7 @@ const NIVEIS = {
   modelo: "Modelo",
   fisico: "Físico"
 };
-const TIPOS = { contagem: "Contagem", comparacao: "Comparação", soma: "Adição", cubo: "Cubo 2×2", palavra: "Palavra", categorias: "Categorias" };
+const TIPOS = { contagem: "Contagem", comparacao: "Comparação", soma: "Adição", cubo: "Cubo 2×2", palavra: "Palavra", categorias: "Categorias", alvos: "Alvos" };
 const CATEGORIAS = { frutas: "frutas", bebidas: "bebidas", limpeza: "limpeza", padaria: "padaria" };
 
 const fmt = (ms) => {
@@ -232,7 +232,8 @@ formAt.addEventListener("submit", (e) => {
     limiteResposta: Number(f.get("limiteResposta")),
     tamanho: Number(f.get("tamanho")),
     categoria: f.get("categoria"), meta: Number(f.get("meta")), distratores: Number(f.get("distratores")),
-    nomes: f.get("nomes") === "on", trocarRegra: f.get("trocarRegra") === "on"
+    nomes: f.get("nomes") === "on", trocarRegra: f.get("trocarRegra") === "on",
+    qtdAlvos: Number(f.get("qtdAlvos")), tamanhoAlvo: f.get("tamanhoAlvo"), area: f.get("area")
   };
   if (cfg.tipo === "palavra" && !/[A-Za-zÀ-ÿ]/.test(cfg.palavras || "")) {
     alert("Digite ao menos uma palavra (só letras; use hífen para separar sílabas).");
@@ -351,6 +352,8 @@ function render() {
   const at = s.atividadeAtual;
   $("#atividade-atual").textContent = !at
     ? "Nenhuma atividade na tela."
+    : at.tipo === "alvos"
+      ? `Na tela: Alvos · ${at.alvos.atual}/${at.alvos.pontos.length} acertados · ${at.alvos.fora} toque(s) fora${at.resolvida ? " · concluído" : ""}`
     : at.tipo === "categorias"
       ? `Na tela: Categorias · ${CATEGORIAS[at.params.categoria]} · ${at.categorias.coletados.length}/${at.params.meta} no carrinho · ${at.params.distratores} de outras categorias${at.resolvida ? " · concluída" : ""}`
     : at.tipo === "palavra"
@@ -425,7 +428,9 @@ function renderLog(s) {
     ...s.eventos.map((e) => ({ ts: e.ts, txt: textoEvento(e), cls: "" })),
     ...s.respostas.map((r) => ({
       ts: r.ts,
-      txt: r.tipo === "categorias"
+      txt: r.tipo === "alvos"
+        ? `${r.bloco} Alvos: ${r.valor} (${r.detalhe}, ${(r.tempoMs / 1000).toFixed(1)}s)`
+        : r.tipo === "categorias"
         ? `${r.bloco} Categorias: tocou ${r.valor} (${r.detalhe}, ${r.correta ? "certo" : "outra categoria"}, ${(r.tempoMs / 1000).toFixed(1)}s)`
         : r.tipo === "palavra"
         ? `${r.bloco} Palavra ${r.params.palavra}: tocou ${r.valor} (${r.detalhe}, ${r.correta ? "certo" : "outra"}, ${(r.tempoMs / 1000).toFixed(1)}s)`

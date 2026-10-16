@@ -68,6 +68,10 @@ Cole as duas linhas geradas (`TERAPEUTA_SENHA_HASH` e `SESSION_SECRET`) no `.env
   - Botão "Ouvir" opcional, com a voz do navegador.
   - Com "próxima automática", a lista avança palavra por palavra. O B5 mostra as palavras concluídas.
   - Cada toque fica registrado com a posição, a peça esperada e o tempo.
+- **Alvos (aquecimento do laser/olhar):** aparece um círculo de cada vez, começando no centro, e a pessoa aponta e toca. Sugerido no B1, para conferir se o controle ou o olhar estão confortáveis antes das atividades.
+  - O profissional escolhe a quantidade (5 ou 9), o tamanho (grande, médio ou pequeno) e a área (perto do centro ou mais aos lados).
+  - Fica registrado o tempo até acertar cada alvo e os toques fora dele. Com o laser ou o mouse, o toque fora conta; com o olhar, nunca conta.
+  - É um registro do uso do controle, não uma avaliação da pessoa.
 - **Categorias (mercado):** uma gôndola com 3 prateleiras e um carrinho. A pessoa coloca no carrinho só os itens da categoria pedida: frutas, bebidas, limpeza ou padaria. São 20 produtos em 3D, com nomes acentuados opcionais.
   - O profissional escolhe a categoria, quantos itens coletar (1 a 5) e quantos itens de outras categorias aparecem (0 a 10).
   - **Troca de regra:** mantém a mesma prateleira e muda só a categoria pedida. Funciona também depois de trocar de bloco, por exemplo do B3 para o B4. A troca entra na linha do tempo.

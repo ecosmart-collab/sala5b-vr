@@ -37,7 +37,7 @@
 
     <a-scene
       cursor="rayOrigin: mouse"
-      raycaster="objects: .clicavel"
+      raycaster="objects: .clicavel, .fundo-alvo"
       renderer="colorManagement: true; antialias: true"
       background="color: #dfe5e1"
       vr-mode-ui="enabled: true"
@@ -85,8 +85,8 @@
             <a-entity id="mira-anel" geometry="primitive: ring; radiusInner: 0.018; radiusOuter: 0.025; thetaStart: 90; thetaLength: 0.01" material="color: #8fd0c6; shader: flat"></a-entity>
           </a-entity>
         </a-entity>
-        <a-entity laser-controls="hand: left" raycaster="objects: .clicavel; far: 8; lineColor: #f2efe6; lineOpacity: 0.6"></a-entity>
-        <a-entity laser-controls="hand: right" raycaster="objects: .clicavel; far: 8; lineColor: #f2efe6; lineOpacity: 0.6"></a-entity>
+        <a-entity laser-controls="hand: left" raycaster="objects: .clicavel, .fundo-alvo; far: 8; lineColor: #f2efe6; lineOpacity: 0.6"></a-entity>
+        <a-entity laser-controls="hand: right" raycaster="objects: .clicavel, .fundo-alvo; far: 8; lineColor: #f2efe6; lineOpacity: 0.6"></a-entity>
       </a-entity>
     </a-scene>
 

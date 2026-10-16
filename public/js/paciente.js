@@ -559,7 +559,60 @@
     setTimeout(() => alvo.setAttribute("color", cor), 380);
   }
 
+  // ------------------------------------------------------------ alvos (aquecimento)
+  AFRAME.registerComponent("alvo-toque", {
+    schema: { valor: { type: "string" } },
+    init() {
+      this.el.addEventListener("click", (ev) => {
+        const cursor = ev.detail && ev.detail.cursorEl;
+        const modo = cursor && cursor.id === "mira" ? "olhar" : "apontar";
+        if (this.data.valor === "fora" && modo === "olhar") return; // o olhar nunca conta "fora"
+        this.el.emit("escolha", { valor: this.data.valor, modo }, true);
+      });
+    }
+  });
+
+  function telaAlvos(at) {
+    texto(at.enunciado, "0 2.47 0", { width: 3 });
+    texto(`${at.feitos}/${at.total}`, "1.3 2.47 0", { width: 1.8, color: COR.suave });
+
+    // Fundo quase invisível: só registra toque "fora" com laser/mouse
+    el("a-plane", { class: "fundo-alvo", width: 7, height: 3.6, position: "0 1.6 0.05", material: "opacity: 0.001; transparent: true; depthWrite: false", "alvo-toque": "valor: fora", "data-fundo": "1" });
+
+    if (at.ponto) {
+      // Ponto na esfera de raio 2,2 m em torno da cabeça (azimute e elevação em graus)
+      const R = 2.2, az = (at.ponto.az * Math.PI) / 180, elv = (at.ponto.el * Math.PI) / 180;
+      const x = R * Math.cos(elv) * Math.sin(az);
+      const y = 1.6 + R * Math.sin(elv);
+      const z = 2.5 - R * Math.cos(elv) * Math.cos(az);
+      const alvo = el("a-entity", { position: `${x.toFixed(3)} ${y.toFixed(3)} ${z.toFixed(3)}`, "look-at-camera-alvo": "" });
+      el("a-circle", { radius: at.raio * 1.35, color: "#f2efe6", material: "shader: flat; opacity: 0.25; transparent: true", position: "0 0 -0.01" }, alvo);
+      el("a-circle", {
+        radius: at.raio, color: COR.destaque, material: "shader: flat", class: "clicavel",
+        "alvo-toque": "valor: alvo", "data-alvo": "1"
+      }, alvo);
+      el("a-circle", { radius: at.raio * 0.25, color: COR.quadro, material: "shader: flat", position: "0 0 0.002" }, alvo);
+    } else {
+      if (!comemorados.has(at.id)) {
+        comemorados.add(at.id);
+        tom([523, 659, 784], 0.6, 0.1);
+      }
+    }
+  }
+
+  // O alvo sempre virado para a pessoa
+  AFRAME.registerComponent("look-at-camera-alvo", {
+    tick() {
+      const cam = this.el.sceneEl.camera;
+      if (!cam) return;
+      const p = new THREE.Vector3();
+      cam.getWorldPosition(p);
+      this.el.object3D.lookAt(p);
+    }
+  });
+
   function telaAtividade(at) {
+    if (at.tipo === "alvos") return telaAlvos(at);
     if (at.tipo === "categorias") return telaCategorias(at);
     if (at.tipo === "cubo") return telaCubo(at);
     if (at.tipo === "palavra") return telaPalavra(at);
@@ -609,7 +662,7 @@
     texto("Hoje você fez", "0 2.3 0", { width: 3 });
     texto(String(f.concluidas), "0 1.85 0", { width: 9, color: COR.destaque });
     texto(f.concluidas === 1 ? "atividade" : "atividades", "0 1.45 0", { width: 3 });
-    const nomes = { contagem: "contar", comparacao: "comparar", soma: "somar", cubo: "cubo", palavra: "palavras", categorias: "categorias" };
+    const nomes = { contagem: "contar", comparacao: "comparar", soma: "somar", cubo: "cubo", palavra: "palavras", categorias: "categorias", alvos: "aquecimento" };
     if (f.tipos.length) texto(f.tipos.map((t) => nomes[t] || t).join("  ·  "), "0 1.15 0", { width: 2.6, color: COR.suave });
     if (f.palavras && f.palavras.length) {
       el("a-plane", { width: 2.6, height: 0.26, position: "0 0.98 0.02", color: "#3a4a50", material: "opacity: 0.7; transparent: true" });
@@ -694,7 +747,7 @@
     }
     if (!estado.atividade || estado.atividade.resolvida) return;
     travado = true;
-    if (!alvo.hasAttribute("data-peca") && !alvo.hasAttribute("data-item")) alvo.object3D.position.z -= 0.03;
+    if (!alvo.hasAttribute("data-peca") && !alvo.hasAttribute("data-item") && !alvo.hasAttribute("data-alvo") && !alvo.hasAttribute("data-fundo")) alvo.object3D.position.z -= 0.03;
     socketAtual?.emit("resposta", { atividadeId: estado.atividade.id, valor, modo: ev.detail.modo });
   });
 
@@ -725,6 +778,11 @@
       render();
     });
     socket.on("retorno", ({ atividadeId, valor, correta }) => {
+      if (estado?.atividade?.tipo === "alvos") {
+        tom([correta ? 660 : 330], 0.12, correta ? 0.06 : 0.03);
+        if (!correta) travado = false;
+        return;
+      }
       if (estado?.atividade?.tipo === "categorias") {
         if (correta) tom([587], 0.2, 0.06);
         else {
