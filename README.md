@@ -76,6 +76,11 @@ Cole as duas linhas geradas (`TERAPEUTA_SENHA_HASH` e `SESSION_SECRET`) no `.env
   - O profissional escolhe a categoria, quantos itens coletar (1 a 5) e quantos itens de outras categorias aparecem (0 a 10).
   - **Troca de regra:** mantém a mesma prateleira e muda só a categoria pedida. Funciona também depois de trocar de bloco, por exemplo do B3 para o B4. A troca entra na linha do tempo.
   - Um item de outra categoria pisca em cinza, com som neutro, e continua na prateleira. O destaque (apoio visual) marca o próximo item da categoria pedida.
+  - **Pegar e levar ao carrinho** (opcional): a pessoa toca no item, que passa a acompanhar o laser, o mouse ou a mira de olhar, e depois toca no carrinho para soltar.
+    - Tocar em outro item troca o que está na mão.
+    - Tocar na gôndola com o laser ou o mouse devolve o item; a mira de olhar não devolve.
+    - Item de outra categoria solto no carrinho volta para a prateleira e pisca.
+    - O registro diz "levado ao carrinho".
   - Cada toque registra o item, a categoria do item, a categoria pedida, o tempo, o apoio e o modo (olhar ou apontar).
 - **Tempo no óculos:** o painel mostra o tempo contínuo e o total de uso, marcando se a pessoa está em VR ou na tela.
   - "Em uso" quer dizer conectado e fora de pausa. Um descanso de 1 min ou mais zera o tempo contínuo.

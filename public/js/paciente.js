@@ -484,7 +484,7 @@
       this.el.addEventListener("mouseleave", () => this.el.object3D.scale.copy(original()));
       this.el.addEventListener("click", (ev) => {
         const modo = ev.detail && ev.detail.cursorEl && ev.detail.cursorEl.id === "mira" ? "olhar" : "apontar";
-        this.el.emit("escolha", { valor: this.data.uid, modo }, true);
+        this.el.emit("escolha", { valor: this.data.uid, modo, cursorEl: ev.detail && ev.detail.cursorEl }, true);
       });
     }
   });
@@ -510,15 +510,101 @@
     return el(it.forma, attrs, pai);
   }
 
+  // ---- pegar e levar: o item na mão segue o ponteiro que o pegou (laser, mouse ou mira de olhar)
+  let segurando = null; // { uid, el (na prateleira), visual (na mão), cursorEl, modo }
+  const cena = document.querySelector("a-scene");
+
+  AFRAME.registerComponent("segue-ponteiro", {
+    init() {
+      this.origem = new THREE.Vector3();
+      this.dir = new THREE.Vector3();
+    },
+    tick() {
+      if (!segurando || segurando.visual !== this.el) return;
+      const c = segurando.cursorEl;
+      const rc = c && c.components && c.components.raycaster;
+      if (rc && rc.raycaster) {
+        this.origem.copy(rc.raycaster.ray.origin);
+        this.dir.copy(rc.raycaster.ray.direction);
+      } else {
+        const cam = cena.camera;
+        if (!cam) return;
+        cam.getWorldPosition(this.origem);
+        cam.getWorldDirection(this.dir);
+      }
+      this.el.object3D.position.copy(this.origem).addScaledVector(this.dir, 1.25);
+    }
+  });
+
+  function esconderNaPrateleira(elItem) {
+    elItem.object3D.visible = false;
+    elItem.classList.remove("clicavel");
+  }
+  function mostrarNaPrateleira(elItem) {
+    if (!elItem) return;
+    elItem.object3D.visible = true;
+    elItem.classList.add("clicavel");
+  }
+  function largarVisual() {
+    if (segurando && segurando.visual && segurando.visual.parentNode) segurando.visual.parentNode.removeChild(segurando.visual);
+  }
+  function devolver() {
+    if (!segurando) return;
+    largarVisual();
+    mostrarNaPrateleira(palco.querySelector(`[data-item="${segurando.uid}"]`));
+    segurando = null;
+  }
+  function pegar(uid, elItem, cursorEl, modo) {
+    const at = estado && estado.atividade;
+    const it = at && at.itens.find((i) => i.uid === uid);
+    if (!it) return;
+    if (segurando) devolver();
+    esconderNaPrateleira(elItem);
+    const visual = produto3D(it, "0 1.6 -1", { "segue-ponteiro": "" }, cena, 0.75); // menor na mão, para não tapar a visão
+    segurando = { uid, el: elItem, visual, cursorEl, modo };
+    tom([523], 0.12, 0.05);
+  }
+  function soltarNoCarrinho(modoSoltar) {
+    if (!segurando || !estado || !estado.atividade || travado) return;
+    const { uid, modo } = segurando;
+    largarVisual();
+    segurando = { uid, el: null, visual: null, cursorEl: null, modo };
+    travado = true;
+    socketAtual?.emit("resposta", { atividadeId: estado.atividade.id, valor: uid, modo: modoSoltar || modo });
+  }
+
+  // Carrinho e gôndola recebem toques só no modo "levar"
+  AFRAME.registerComponent("alvo-carrinho", {
+    init() {
+      this.el.addEventListener("mouseenter", () => segurando && this.el.object3D.scale.setScalar(1.08));
+      this.el.addEventListener("mouseleave", () => this.el.object3D.scale.setScalar(1));
+      this.el.addEventListener("click", (ev) => {
+        const c = ev.detail && ev.detail.cursorEl;
+        soltarNoCarrinho(c && c.id === "mira" ? "olhar" : "apontar");
+      });
+    }
+  });
+  AFRAME.registerComponent("devolver-prateleira", {
+    init() {
+      this.el.addEventListener("click", () => devolver());
+    }
+  });
+
   const PRATELEIRA_Y = [1.62, 1.12, 0.62]; // vagas 0–4 em cima, 5–9 no meio, 10–14 embaixo
 
   function telaCategorias(at) {
     texto(at.enunciado, "-0.25 2.47 0", { width: 3.2 });
     texto(`No carrinho: ${at.noCarrinho.length}/${at.meta}`, "1.2 2.47 0", { width: 1.8, color: COR.suave });
     if (at.trocaDeRegra && !at.resolvida) texto("Mesma prateleira, novo pedido", "-0.25 2.27 0", { width: 1.9, color: COR.suave });
+    if (at.levar && !at.resolvida) texto("Toque no item e depois no carrinho", `-0.25 ${at.trocaDeRegra ? 2.12 : 2.27} 0`, { width: 1.9, color: COR.suave });
 
     // Gôndola
-    el("a-plane", { width: 2.9, height: 1.62, position: "0 1.2 0.12", color: COR.quadro === "#000000" ? "#1a1a1a" : "#56656c" });
+    const fundoGondola = el("a-plane", { width: 2.9, height: 1.62, position: "0 1.2 0.12", color: COR.quadro === "#000000" ? "#1a1a1a" : "#56656c" });
+    if (at.levar) {
+      // tocar na gôndola com laser/mouse devolve o item (a mira de olhar não atinge o fundo)
+      fundoGondola.classList.add("fundo-alvo");
+      fundoGondola.setAttribute("devolver-prateleira", "");
+    }
     for (const y of PRATELEIRA_Y) el("a-box", { width: 2.9, height: 0.03, depth: 0.36, position: `0 ${y} 0.3`, color: "#c9cfd2" });
 
     // Produtos
@@ -532,16 +618,28 @@
     }
 
     // Carrinho (à direita da gôndola)
-    const carrinho = el("a-entity", { position: "1.62 0.5 0.75", rotation: "0 -30 0" });
-    el("a-box", { width: 0.62, height: 0.3, depth: 0.42, color: "#3f8f6e", material: "opacity: 0.85; transparent: true" }, carrinho);
-    el("a-cylinder", { radius: 0.015, height: 0.7, position: "0.28 -0.5 0.18", color: "#7f8c8d" }, carrinho);
-    el("a-cylinder", { radius: 0.015, height: 0.7, position: "-0.28 -0.5 0.18", color: "#7f8c8d" }, carrinho);
+    const carrinho = el("a-entity", { position: "1.18 0.5 0.78", rotation: "0 -20 0" }); // visível no PC, longe do botão de VR do canto
+    const caixa = el("a-box", { width: 0.62, height: 0.3, depth: 0.42, color: "#3f8f6e", material: "opacity: 0.85; transparent: true" }, carrinho);
+    if (at.levar && !at.resolvida) {
+      caixa.classList.add("clicavel");
+      caixa.setAttribute("data-carrinho", "1");
+      caixa.setAttribute("alvo-carrinho", "");
+    }
+    el("a-cylinder", { radius: 0.015, height: 0.34, position: "0.28 -0.3 0.18", color: "#7f8c8d" }, carrinho);
+    el("a-cylinder", { radius: 0.015, height: 0.34, position: "-0.28 -0.3 0.18", color: "#7f8c8d" }, carrinho);
     texto("Carrinho", "0 0.28 0", { width: 1.6, color: "#1f2a30" }, carrinho);
     at.noCarrinho.forEach((it, i) => {
       const cx = -0.2 + (i % 3) * 0.2;
       const cz = -0.1 + Math.floor(i / 3) * 0.2;
       produto3D(it, `${cx} 0.2 ${cz}`, {}, carrinho, 0.9);
     });
+
+    if (segurando) {
+      const naPrateleira = palco.querySelector(`[data-item="${segurando.uid}"]`);
+      if (naPrateleira && at.levar && segurando.visual) esconderNaPrateleira(naPrateleira);
+      else if (!segurando.visual && naPrateleira) segurando = null; // resposta já processada
+      else if (!naPrateleira) { largarVisual(); segurando = null; }
+    }
 
     if (at.resolvida) {
       texto("Lista completa", "0 0.38 0.5", { width: 2.6, color: COR.destaque });
@@ -612,6 +710,7 @@
   });
 
   function telaAtividade(at) {
+    if (at.tipo !== "categorias" && segurando) devolver();
     if (at.tipo === "alvos") return telaAlvos(at);
     if (at.tipo === "categorias") return telaCategorias(at);
     if (at.tipo === "cubo") return telaCubo(at);
@@ -746,6 +845,10 @@
       return;
     }
     if (!estado.atividade || estado.atividade.resolvida) return;
+    if (estado.atividade.tipo === "categorias" && estado.atividade.levar && alvo.hasAttribute("data-item")) {
+      pegar(valor, alvo, ev.detail.cursorEl, ev.detail.modo);
+      return;
+    }
     travado = true;
     if (!alvo.hasAttribute("data-peca") && !alvo.hasAttribute("data-item") && !alvo.hasAttribute("data-alvo") && !alvo.hasAttribute("data-fundo")) alvo.object3D.position.z -= 0.03;
     socketAtual?.emit("resposta", { atividadeId: estado.atividade.id, valor, modo: ev.detail.modo });
@@ -787,7 +890,10 @@
         if (correta) tom([587], 0.2, 0.06);
         else {
           tom([392], 0.2, 0.04); // neutro, sem "som de erro"
-          piscar(document.querySelector(`[data-item="${valor}"]`));
+          const naPrateleira = document.querySelector(`[data-item="${valor}"]`);
+          if (segurando && segurando.uid === valor) segurando = null;
+          mostrarNaPrateleira(naPrateleira);
+          piscar(naPrateleira);
           travado = false;
         }
         return;

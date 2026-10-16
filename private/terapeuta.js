@@ -232,7 +232,7 @@ formAt.addEventListener("submit", (e) => {
     limiteResposta: Number(f.get("limiteResposta")),
     tamanho: Number(f.get("tamanho")),
     categoria: f.get("categoria"), meta: Number(f.get("meta")), distratores: Number(f.get("distratores")),
-    nomes: f.get("nomes") === "on", trocarRegra: f.get("trocarRegra") === "on",
+    nomes: f.get("nomes") === "on", trocarRegra: f.get("trocarRegra") === "on", levar: f.get("levar") === "on",
     qtdAlvos: Number(f.get("qtdAlvos")), tamanhoAlvo: f.get("tamanhoAlvo"), area: f.get("area")
   };
   if (cfg.tipo === "palavra" && !/[A-Za-zÀ-ÿ]/.test(cfg.palavras || "")) {
@@ -355,7 +355,7 @@ function render() {
     : at.tipo === "alvos"
       ? `Na tela: Alvos · ${at.alvos.atual}/${at.alvos.pontos.length} acertados · ${at.alvos.fora} toque(s) fora${at.resolvida ? " · concluído" : ""}`
     : at.tipo === "categorias"
-      ? `Na tela: Categorias · ${CATEGORIAS[at.params.categoria]} · ${at.categorias.coletados.length}/${at.params.meta} no carrinho · ${at.params.distratores} de outras categorias${at.resolvida ? " · concluída" : ""}`
+      ? `Na tela: Categorias · ${CATEGORIAS[at.params.categoria]} · ${at.categorias.coletados.length}/${at.params.meta} no carrinho · ${at.params.distratores} de outras categorias${at.params.levar ? " · levando ao carrinho" : ""}${at.resolvida ? " · concluída" : ""}`
     : at.tipo === "palavra"
       ? `Na tela: Palavra ${at.params.palavra} (${at.params.indice + 1}/${at.params.totalLista}) · ${at.palavra.progresso}/${at.palavra.unidades.length} peças${at.resolvida ? " · concluída" : ""}`
     : at.tipo === "cubo"
