@@ -48,6 +48,8 @@ app.use("/vendor/naf", express.static(path.join(__dirname, "node_modules/network
 app.post("/api/login", auth.rotaLogin);
 app.post("/api/logout", auth.rotaLogout);
 app.get("/terapeuta", auth.exigirTerapeuta, (_req, res) => res.sendFile(path.join(__dirname, "private", "terapeuta.html")));
+// Sala de demonstração antiga (multiusuário + botão do n8n): só com login
+app.get("/demo", auth.exigirTerapeuta, (_req, res) => res.sendFile(path.join(__dirname, "private", "demo.html")));
 app.use("/privado", auth.exigirTerapeuta, express.static(path.join(__dirname, "private")));
 
 app.get("/api/eu", auth.exigirTerapeuta, (_req, res) => res.json({ ok: true }));
@@ -105,7 +107,7 @@ app.get("/api/sessoes/:codigo/csv", auth.exigirTerapeuta, (req, res) => {
 // ---------- Proxy do botão -> n8n ----------
 const lastCall = new Map(); // ip -> timestamp (anti-spam simples)
 
-app.post("/api/acionar", async (req, res) => {
+app.post("/api/acionar", auth.exigirTerapeuta, async (req, res) => {
   if (!N8N_WEBHOOK_URL) {
     return res.status(500).json({ ok: false, erro: "N8N_WEBHOOK_URL não configurada no .env" });
   }

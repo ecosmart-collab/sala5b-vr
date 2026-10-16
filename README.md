@@ -19,7 +19,7 @@ cp .env.example .env      # ajuste N8N_WEBHOOK_URL e N8N_WEBHOOK_SECRET
 npm start                 # http://localhost:8080
 ```
 
-Parâmetros de URL: `?nome=Elton&sala=reuniao`.
+A página inicial (`/`) só tem dois botões: "Entrar com código" (óculos) e "Painel do profissional". A sala de demonstração com o botão do n8n fica em `/demo` e, assim como `/api/acionar`, exige o login do profissional. Parâmetros de URL da demonstração: `/demo?nome=Elton&sala=reuniao`.
 
 Sem n8n disponível: `npm run mock-n8n` e use `N8N_WEBHOOK_URL=http://localhost:5678/webhook/vr-botao`.
 
@@ -27,8 +27,8 @@ Sem n8n disponível: `npm run mock-n8n` e use `N8N_WEBHOOK_URL=http://localhost:
 
 WebXR exige HTTPS (exceto `localhost`). Duas opções:
 
-1. **Rede local:** `npm run start:https` → abra `https://<IP-do-PC>:8080` no Meta Quest Browser, aceite o aviso de certificado e clique em “Enter VR”. Libere a porta 8080 no Firewall do Windows.
-2. **Cabo USB:** `adb reverse tcp:8080 tcp:8080` → no óculos abra `http://localhost:8080` (sem aviso de certificado).
+1. **Rede local:** `npm run start:https` → abra `https://<IP-do-PC>:8080/paciente.html` no Meta Quest Browser, aceite o aviso de certificado e clique em “Enter VR”. Libere a porta 8080 no Firewall do Windows.
+2. **Cabo USB:** `adb reverse tcp:8080 tcp:8080` → no óculos abra `http://localhost:8080/paciente.html` (sem aviso de certificado).
 
 Controles: analógico anda, gatilho no laser clica no botão. No PC: WASD + mouse.
 
