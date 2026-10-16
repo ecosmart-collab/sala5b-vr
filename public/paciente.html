@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Sala 5B</title>
+    <script src="https://aframe.io/releases/1.7.0/aframe.min.js"></script>
+    <script src="/vendor/troika/aframe-troika-text.min.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <style>
+      [hidden] { display: none !important; }
+      #entrada *, #entrada *::before, #entrada *::after { box-sizing: border-box; }
+      #entrada {
+        position: fixed; inset: 0; z-index: 20; display: grid; place-items: center;
+        background: #e8ebe6; font: 18px/1.5 system-ui, sans-serif; color: #1f2a30; padding: 16px;
+      }
+      #entrada form { background: #fff; padding: 28px; border-radius: 14px; width: 100%; max-width: 380px; text-align: center; }
+      #entrada h1 { font-size: 22px; margin: 0 0 6px; }
+      #entrada p { margin: 0 0 16px; color: #66737a; font-size: 15px; }
+      #entrada input { width: 100%; font: 700 28px ui-monospace, monospace; letter-spacing: .2em; text-align: center; text-transform: uppercase; padding: 10px; border: 1px solid #cfd5d8; border-radius: 10px; }
+      #entrada button { margin-top: 16px; width: 100%; padding: 14px; border: 0; border-radius: 10px; background: #2f6f6a; color: #fff; font: 600 18px system-ui; }
+      #entrada .erro { color: #a23b2a; min-height: 24px; margin-top: 8px; font-size: 15px; }
+      #aviso { position: fixed; left: 12px; bottom: 12px; z-index: 10; font: 14px system-ui; color: #fff; background: rgba(0,0,0,.5); padding: 6px 10px; border-radius: 8px; }
+    </style>
+  </head>
+  <body>
+    <div id="entrada">
+      <form id="form-entrada">
+        <h1>Sala 5B</h1>
+        <p>Digite o código que o profissional mostrou</p>
+        <input id="codigo" maxlength="6" autocomplete="off" autocapitalize="characters" spellcheck="false" required />
+        <button>Entrar</button>
+        <div class="erro" id="erro-entrada"></div>
+      </form>
+    </div>
+    <div id="aviso" hidden></div>
+
+    <a-scene
+      cursor="rayOrigin: mouse"
+      raycaster="objects: .clicavel"
+      renderer="colorManagement: true; antialias: true"
+      background="color: #dfe5e1"
+      vr-mode-ui="enabled: true"
+    >
+      <!-- Luz suave e uniforme -->
+      <a-entity light="type: hemisphere; color: #ffffff; groundColor: #b9b2a5; intensity: 1.25"></a-entity>
+      <a-entity light="type: directional; intensity: 0.5" position="1 4 2"></a-entity>
+
+      <!-- Sala neutra, sem poluição visual -->
+      <a-plane rotation="-90 0 0" width="14" height="14" color="#c9bfae"></a-plane>
+      <a-plane position="0 2.5 -4" width="14" height="5" color="#d7ddd6"></a-plane>
+      <a-plane position="-5 2.5 0" rotation="0 90 0" width="14" height="5" color="#cfd6cf"></a-plane>
+      <a-plane position="5 2.5 0" rotation="0 -90 0" width="14" height="5" color="#cfd6cf"></a-plane>
+      <a-plane position="0 2.5 5" rotation="0 180 0" width="14" height="5" color="#d7ddd6"></a-plane>
+
+      <!-- Quadro principal -->
+      <a-plane id="quadro" position="0 1.65 -2.6" width="3.2" height="2" color="#2b3a40"></a-plane>
+
+      <!-- Sequência do encontro (antecipação visual) -->
+      <a-entity id="sequencia" position="0 2.85 -2.58"></a-entity>
+
+      <!-- Conteúdo dinâmico (atividades, check-in, fechamento) -->
+      <a-entity id="palco" position="0 0 -2.5"></a-entity>
+
+      <!-- Respiração guiada (opcional, ligada pelo profissional) -->
+      <a-entity id="respiracao" position="-1.95 1.3 -2.3" visible="false">
+        <a-sphere id="resp-esfera" radius="0.18" color="#8fb9b3" material="opacity: 0.85; transparent: true"></a-sphere>
+        <a-entity id="resp-texto" position="0 -0.42 0" troika-text="value: ; align: center; anchor: center; fontSize: 0.09; color: #2b3a40; font: /vendor/fonte/atkinson-hyperlegible-latin-400-normal.woff"></a-entity>
+      </a-entity>
+
+      <!-- Pessoa atendida: sem deslocamento obrigatório; responde apontando -->
+      <a-entity id="rig">
+        <a-entity camera position="0 1.6 0" look-controls="pointerLockEnabled: false">
+          <!-- Mira de olhar: ligada pelo profissional; escolhe ao fixar o olhar por alguns segundos -->
+          <a-entity
+            id="mira"
+            position="0 0 -0.9"
+            visible="false"
+            cursor="fuse: true; fuseTimeout: 2000; rayOrigin: entity"
+            raycaster="objects: .clicavel; far: 8; enabled: false; showLine: false"
+            geometry="primitive: ring; radiusInner: 0.011; radiusOuter: 0.016"
+            material="color: #ffffff; shader: flat; opacity: 0.9; transparent: true"
+
+          >
+            <a-entity id="mira-anel" geometry="primitive: ring; radiusInner: 0.018; radiusOuter: 0.025; thetaStart: 90; thetaLength: 0.01" material="color: #8fd0c6; shader: flat"></a-entity>
+          </a-entity>
+        </a-entity>
+        <a-entity laser-controls="hand: left" raycaster="objects: .clicavel; far: 8; lineColor: #f2efe6; lineOpacity: 0.6"></a-entity>
+        <a-entity laser-controls="hand: right" raycaster="objects: .clicavel; far: 8; lineColor: #f2efe6; lineOpacity: 0.6"></a-entity>
+      </a-entity>
+    </a-scene>
+
+    <script src="/js/cubo3d.js"></script>
+    <script src="/js/paciente.js"></script>
+  </body>
+</html>

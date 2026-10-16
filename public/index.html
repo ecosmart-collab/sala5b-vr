@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <title>Sala VR</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <script src="https://aframe.io/releases/1.7.0/aframe.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.8.1/socket.io.min.js"></script>
+    <script src="/vendor/naf/networked-aframe.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/c-frame/aframe-extras@7.5.4/dist/aframe-extras.controls.min.js"></script>
+    <script src="/js/componentes.js"></script>
+
+    <style>
+      #hud {
+        position: fixed; top: 12px; left: 12px; z-index: 10;
+        font: 14px/1.4 system-ui, sans-serif; color: #fff;
+        background: rgba(0, 0, 0, 0.55); padding: 8px 12px; border-radius: 8px;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div id="hud">Conectando…</div>
+
+    <a-scene
+      networked-scene="room: sala-principal; adapter: socketio; connectOnLoad: false; debug: false"
+      cursor="rayOrigin: mouse"
+      raycaster="objects: .clicavel"
+      renderer="colorManagement: true"
+    >
+      <a-assets>
+        <template id="rig-template"><a-entity></a-entity></template>
+
+        <template id="head-template">
+          <a-entity class="avatar">
+            <a-sphere class="head" scale="0.2 0.22 0.2" cor-aleatoria></a-sphere>
+            <a-sphere color="#fff" position="0.06 0.05 -0.16" scale="0.04 0.04 0.04"></a-sphere>
+            <a-sphere color="#fff" position="-0.06 0.05 -0.16" scale="0.04 0.04 0.04"></a-sphere>
+            <a-text class="nametag" value="?" align="center" position="0 0.38 0" rotation="0 180 0" width="2.5" color="#fff"></a-text>
+          </a-entity>
+        </template>
+      </a-assets>
+
+      <!-- ===== Sala ===== -->
+      <a-entity light="type: ambient; intensity: 0.5"></a-entity>
+      <a-entity light="type: point; intensity: 1.2; distance: 20" position="0 3.6 0"></a-entity>
+      <a-entity light="type: directional; intensity: 0.4" position="2 4 3"></a-entity>
+
+      <a-plane rotation="-90 0 0" width="12" height="12" color="#5b4a3b"></a-plane>
+      <a-plane rotation="90 0 0" position="0 4 0" width="12" height="12" color="#e8e4dc"></a-plane>
+      <a-plane position="0 2 -6" width="12" height="4" color="#cfd8dc"></a-plane>
+      <a-plane position="0 2 6" rotation="0 180 0" width="12" height="4" color="#cfd8dc"></a-plane>
+      <a-plane position="-6 2 0" rotation="0 90 0" width="12" height="4" color="#b0bec5"></a-plane>
+      <a-plane position="6 2 0" rotation="0 -90 0" width="12" height="4" color="#b0bec5"></a-plane>
+
+      <!-- Quadro na parede -->
+      <a-plane position="0 2.3 -5.95" width="4" height="1.6" color="#263238">
+        <a-text value="Sala VR + n8n" align="center" position="0 0.35 0.01" width="6" color="#fff"></a-text>
+        <a-text id="painel-status" value="Aperte o botao vermelho" align="center" position="0 -0.25 0.01" width="3.5" color="#80cbc4"></a-text>
+      </a-plane>
+
+      <!-- Mesas decorativas -->
+      <a-box position="-3.5 0.4 -3" width="1.6" height="0.8" depth="0.9" color="#795548"></a-box>
+      <a-box position="3.5 0.4 -3" width="1.6" height="0.8" depth="0.9" color="#795548"></a-box>
+
+      <!-- Pedestal + botão -->
+      <a-cylinder position="0 0.5 -2" radius="0.3" height="1" color="#455a64"></a-cylinder>
+      <a-entity position="0 1.03 -2">
+        <a-cylinder
+          id="botao-n8n"
+          class="clicavel"
+          radius="0.14" height="0.06" color="#e53935"
+          botao-webhook="nome: principal; painel: #painel-status"
+        ></a-cylinder>
+      </a-entity>
+      <a-text value="Dispara webhook n8n" align="center" position="0 1.25 -2" width="1.6" color="#fff" look-at-camera></a-text>
+
+      <!-- ===== Jogador ===== -->
+      <a-entity
+        id="rig"
+        movement-controls="constrainToNavMesh: false; speed: 0.2"
+        position="0 0 2"
+        networked="template: #rig-template"
+      >
+        <a-entity id="player" camera position="0 1.6 0" look-controls networked="template: #head-template" visible="false"></a-entity>
+
+        <!-- Mãos sincronizadas -->
+        <a-entity networked-hand-controls="hand: left; handModelStyle: controller" networked="template: #left-hand-default-template"></a-entity>
+        <a-entity networked-hand-controls="hand: right; handModelStyle: controller" networked="template: #right-hand-default-template"></a-entity>
+
+        <!-- Laser para clicar com os controles no VR -->
+        <a-entity laser-controls="hand: left; model: false" raycaster="objects: .clicavel; far: 6; lineColor: #80cbc4"></a-entity>
+        <a-entity laser-controls="hand: right; model: false" raycaster="objects: .clicavel; far: 6; lineColor: #80cbc4"></a-entity>
+      </a-entity>
+    </a-scene>
+
+    <script src="/js/app.js"></script>
+  </body>
+</html>

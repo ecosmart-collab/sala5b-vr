@@ -1,0 +1,25 @@
+{
+  "name": "vr-sala",
+  "version": "1.0.0",
+  "description": "Sala VR multiusuario (A-Frame + Networked-Aframe) integrada ao n8n",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "start:https": "node -e \"process.env.HTTPS='true';require('./server.js')\"",
+    "mock-n8n": "node scripts/mock-n8n.js",
+    "criar-senha": "node scripts/criar-senha.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "@fontsource/atkinson-hyperlegible": "^5.3.0",
+    "aframe-troika-text": "^0.14.0",
+    "dotenv": "^18.0.8",
+    "express": "^4.22.3",
+    "networked-aframe": "^0.14.3",
+    "selfsigned": "^2.4.1",
+    "socket.io": "^4.8.4"
+  }
+}

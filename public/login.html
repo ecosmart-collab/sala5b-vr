@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Sala 5B · Entrar</title>
+    <style>
+      :root { --bg: #f3f1ec; --card: #fff; --ink: #1f2a30; --muted: #66737a; --accent: #2f6f6a; --erro: #a23b2a; }
+      * { box-sizing: border-box; }
+      body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: var(--bg); color: var(--ink); font: 16px/1.5 system-ui, sans-serif; padding: 16px; }
+      form { background: var(--card); width: 100%; max-width: 360px; padding: 28px; border-radius: 14px; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+      h1 { margin: 0 0 4px; font-size: 22px; }
+      p { margin: 0 0 20px; color: var(--muted); font-size: 14px; }
+      label { display: block; font-size: 13px; font-weight: 600; margin: 12px 0 4px; }
+      input { width: 100%; padding: 10px 12px; border: 1px solid #cfd5d8; border-radius: 8px; font: inherit; }
+      button { width: 100%; margin-top: 20px; padding: 11px; border: 0; border-radius: 8px; background: var(--accent); color: #fff; font: 600 15px system-ui; cursor: pointer; }
+      #erro { color: var(--erro); font-size: 14px; min-height: 20px; margin-top: 10px; }
+    </style>
+  </head>
+  <body>
+    <form id="form">
+      <h1>Sala 5B</h1>
+      <p>Painel do profissional</p>
+      <label for="usuario">Usuário</label>
+      <input id="usuario" autocomplete="username" required />
+      <label for="senha">Senha</label>
+      <input id="senha" type="password" autocomplete="current-password" required />
+      <button type="submit">Entrar</button>
+      <div id="erro" role="alert"></div>
+    </form>
+    <script>
+      document.getElementById("form").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const erro = document.getElementById("erro");
+        erro.textContent = "";
+        const r = await fetch("/api/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ usuario: usuario.value.trim(), senha: senha.value })
+        });
+        const d = await r.json().catch(() => ({}));
+        if (d.ok) location.href = "/terapeuta";
+        else erro.textContent = d.erro || "Falha no login";
+      });
+    </script>
+  </body>
+</html>

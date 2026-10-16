@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Sala 5B · Painel</title>
+    <link rel="stylesheet" href="/privado/terapeuta.css" />
+    <script src="/socket.io/socket.io.js"></script>
+  </head>
+  <body>
+    <header class="topo">
+      <strong>Sala 5B</strong>
+      <span id="topo-sessao" class="muted"></span>
+      <span class="espaco"></span>
+      <button id="btn-voltar" class="link" hidden>← Sessões</button>
+      <button id="btn-sair" class="link">Sair</button>
+    </header>
+
+    <!-- ================= LISTA / NOVA SESSÃO ================= -->
+    <main id="tela-lista" class="conteudo">
+      <section class="card">
+        <h2>Novo encontro</h2>
+        <form id="form-nova" class="grade-form">
+          <label>Código da pessoa atendida
+            <input name="paciente" maxlength="40" placeholder="Ex.: P014 (evite nome completo)" required />
+          </label>
+          <label>Duração
+            <select name="duracaoMin"><option value="40">40 min</option><option value="60">60 min</option></select>
+          </label>
+          <label class="largo">Objetivo do encontro
+            <input name="objetivo" maxlength="300" placeholder="Ex.: parear quantidade e numeral até 5" required />
+          </label>
+          <button class="primario">Criar sala</button>
+        </form>
+      </section>
+
+      <section class="card">
+        <h2>Registro mensal (Método 5B)</h2>
+        <form id="form-mensal" class="grade-form">
+          <label>Pessoa atendida (código)
+            <input name="paciente" list="lista-pacientes" maxlength="40" required />
+            <datalist id="lista-pacientes"></datalist>
+          </label>
+          <label>Mês
+            <input name="mes" type="month" required />
+          </label>
+          <button class="primario">Abrir registro mensal</button>
+        </form>
+      </section>
+
+      <section class="card">
+        <h2>Encontros registrados</h2>
+        <div class="tabela-wrap">
+          <table>
+            <thead><tr><th>Data</th><th>Pessoa</th><th>Objetivo</th><th>Respostas</th><th>Participação</th><th>Status</th><th></th></tr></thead>
+            <tbody id="lista-sessoes"><tr><td colspan="7" class="muted">Carregando…</td></tr></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+
+    <!-- ================= SESSÃO AO VIVO ================= -->
+    <main id="tela-sessao" class="conteudo" hidden>
+      <section class="card faixa">
+        <div>
+          <div class="muted pequeno">Código da sala (digitar no óculos)</div>
+          <div id="codigo-sala" class="codigo"></div>
+        </div>
+        <div class="link-paciente">
+          <div class="muted pequeno">Link da pessoa atendida</div>
+          <code id="link-paciente"></code>
+        </div>
+        <div id="status-paciente" class="pill">Aguardando óculos…</div>
+        <div class="oculos">
+          <div class="muted pequeno">Tempo no óculos <span id="oculos-vr" class="tag"></span></div>
+          <div><strong id="oculos-continuo">00:00</strong> <span class="muted pequeno">contínuo · total <span id="oculos-total">00:00</span></span></div>
+          <div class="oculos-config">
+            <label class="pequeno">Avisar aos
+              <select id="oculos-limite"><option>10</option><option>15</option><option selected>20</option><option>25</option><option>30</option><option>40</option></select> min
+            </label>
+            <label class="check pequeno"><input type="checkbox" id="oculos-aviso-paciente" /> aviso também no óculos</label>
+          </div>
+        </div>
+      </section>
+
+      <section id="alerta-oculos" class="card alerta" hidden>
+        <div><strong id="alerta-texto">Tempo contínuo no óculos atingiu o limite.</strong>
+          <div class="pequeno">Considere uma pausa. Descanso de 1 min ou mais zera o tempo contínuo.</div></div>
+        <div class="botoes">
+          <button class="secundario" data-pausa="dentro">Pausa no óculos</button>
+          <button class="primario" data-pausa="fora">Pausa para tirar o óculos</button>
+        </div>
+      </section>
+
+      <div class="colunas">
+        <!-- Coluna 1: blocos -->
+        <section class="card">
+          <h2>Blocos</h2>
+          <div id="blocos" class="blocos"></div>
+          <div class="botoes pausas" id="pausas">
+            <button class="secundario" data-pausa="dentro">Pausa no óculos</button>
+            <button class="secundario" data-pausa="fora">Pausa para tirar o óculos</button>
+          </div>
+          <button id="btn-retomar" class="secundario largo-btn on" hidden>Retomar</button>
+          <p class="muted pequeno">Pausas e transições não contam como bloco. Tempos de referência são flexíveis.</p>
+
+          <h2 class="mt">Espelho ao vivo</h2>
+          <div class="espelho">
+            <img id="espelho-img" alt="Visão da pessoa no óculos" hidden />
+            <div id="espelho-vazio" class="muted pequeno">Desligado. Mostra o que a pessoa vê (cerca de 1,5 quadro por segundo). Nada é gravado.</div>
+          </div>
+          <button id="btn-espelho" class="secundario largo-btn">Ligar espelho</button>
+        </section>
+
+        <!-- Coluna 2: atividades -->
+        <section class="card">
+          <h2>Cena</h2>
+          <div class="linha">
+            <label class="check"><input type="checkbox" id="cena-respiracao" /> Respiração guiada (opcional)</label>
+          </div>
+          <div class="linha">
+            <button id="btn-checkin" class="secundario">Pedir check-in (palavras e cores)</button>
+          </div>
+          <div class="linha">
+            <label class="check"><input type="checkbox" id="cena-contraste" /> Alto contraste (quadro preto, peças brancas)</label>
+          </div>
+          <div class="linha olhar">
+            <label class="check"><input type="checkbox" id="cena-olhar" /> Resposta pelo olhar (fixar o olhar)</label>
+            <select id="olhar-seg" title="Tempo fixando o olhar para escolher"><option value="1">1 s</option><option value="1.5">1,5 s</option><option value="2" selected>2 s</option><option value="3">3 s</option></select>
+          </div>
+          <label class="pequeno">Som ambiente: <span id="ruido-val">0%</span>
+            <input type="range" id="cena-ruido" min="0" max="100" value="0" />
+          </label>
+
+          <h2 class="mt">Lógico-matemático</h2>
+          <form id="form-atividade" class="grade-form">
+            <label>Tipo
+              <select name="tipo">
+                <option value="contagem">Contagem (quantidade → numeral)</option>
+                <option value="comparacao">Comparação (mais / menos)</option>
+                <option value="soma">Adição com blocos</option>
+                <option value="cubo">Cubo 2×2 (grafo de estados)</option>
+                <option value="palavra">Palavra (letras ou sílabas)</option>
+                <option value="categorias">Categorias (mercado)</option>
+              </select>
+            </label>
+            <label data-tipo="contagem comparacao soma">Até
+              <select name="max"><option>3</option><option selected>5</option><option>7</option><option>10</option></select>
+            </label>
+            <label data-tipo="comparacao">Pergunta
+              <select name="pergunta"><option value="mais">Qual tem mais?</option><option value="menos">Qual tem menos?</option></select>
+            </label>
+            <label data-tipo="contagem soma">Opções
+              <select name="numOpcoes"><option value="2">2</option><option value="3" selected>3</option><option value="4">4</option></select>
+            </label>
+            <label data-tipo="contagem">Fixar quantidade
+              <input name="n" type="number" min="1" max="10" placeholder="aleatório" />
+            </label>
+            <label data-tipo="comparacao soma">Fixar A
+              <input name="a" type="number" min="0" max="10" placeholder="aleatório" />
+            </label>
+            <label data-tipo="comparacao soma">Fixar B
+              <input name="b" type="number" min="0" max="10" placeholder="aleatório" />
+            </label>
+            <label class="largo" data-tipo="palavra">Palavras (separe por vírgula; hífen separa sílabas)
+              <input name="palavras" list="sugestoes-palavras" maxlength="400" placeholder="BO-LA, CA-SA, SA-PA-TO" />
+              <datalist id="sugestoes-palavras">
+                <option value="BO-LA, CA-SA, GA-TO, PA-TO"></option>
+                <option value="SA-PA-TO, BO-NE-CA, CA-VA-LO, JA-NE-LA"></option>
+                <option value="TA-PU, LI-BO, FE-MA"></option>
+              </datalist>
+            </label>
+            <label data-tipo="palavra">Peças
+              <select name="unidade"><option value="letra">Letras</option><option value="silaba">Sílabas</option></select>
+            </label>
+            <label data-tipo="palavra">Arrumação
+              <select name="arranjo"><option value="ordem">Em ordem (início acessível)</option><option value="arco">Embaralhadas em arco</option></select>
+            </label>
+            <label data-tipo="palavra">Tamanho das peças
+              <select name="tamanho"><option value="1">Normal</option><option value="1.3">Grande</option><option value="1.6">Muito grande</option></select>
+            </label>
+            <label class="check largo" data-tipo="palavra"><input type="checkbox" name="falar" /> Botão "Ouvir" na cena (voz do navegador)</label>
+            <label data-tipo="categorias">Categoria pedida
+              <select name="categoria"><option value="frutas">Frutas</option><option value="bebidas">Bebidas</option><option value="limpeza">Limpeza</option><option value="padaria">Padaria</option></select>
+            </label>
+            <label data-tipo="categorias">Itens para coletar
+              <select name="meta"><option>1</option><option>2</option><option selected>3</option><option>4</option><option>5</option></select>
+            </label>
+            <label data-tipo="categorias">Itens de outras categorias
+              <select name="distratores"><option>0</option><option>2</option><option selected>4</option><option>6</option><option>8</option><option>10</option></select>
+            </label>
+            <label class="check largo" data-tipo="categorias"><input type="checkbox" name="nomes" checked /> Mostrar o nome de cada item</label>
+            <label class="check largo" data-tipo="categorias"><input type="checkbox" name="trocarRegra" /> Troca de regra: manter a mesma prateleira e mudar só a categoria</label>
+            <label data-tipo="cubo">Movimentos até resolver
+              <select name="profundidade"><option>1</option><option selected>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>8</option></select>
+            </label>
+            <label data-tipo="cubo">Giros na tela
+              <select name="numMov"><option value="6">6 (todos)</option><option value="3">3</option><option value="2">2</option></select>
+            </label>
+            <label class="check largo" data-tipo="cubo"><input type="checkbox" name="mapa" checked /> Grafo mostra quais giros aproximam (cores)</label>
+            <label>Tempo para responder
+              <select name="limiteResposta"><option value="0">sem limite</option><option value="10">10 s</option><option value="20">20 s</option><option value="30">30 s</option><option value="60">60 s</option></select>
+            </label>
+            <label class="check largo"><input type="checkbox" name="destacar" /> Apoio visual: destacar a resposta</label>
+            <label class="check largo"><input type="checkbox" id="auto-proxima" /> Próxima automática após acerto</label>
+            <div class="largo botoes">
+              <button class="primario">Enviar atividade</button>
+              <button type="button" id="btn-limpar" class="secundario">Limpar tela</button>
+            </div>
+          </form>
+          <div id="atividade-atual" class="muted pequeno"></div>
+        </section>
+
+        <!-- Coluna 3: registro -->
+        <section class="card">
+          <h2>Apoio na próxima resposta</h2>
+          <div class="niveis" id="niveis-apoio"></div>
+          <div class="linha-apoio">
+            <label class="check pequeno"><input type="checkbox" id="apoio-voltar" checked /> voltar para "Independente" após cada resposta</label>
+            <label class="pequeno" id="apoio-ultima-wrap" hidden>Última resposta:
+              <select id="apoio-ultima"></select>
+            </label>
+          </div>
+
+          <h2 class="mt">Registro do bloco <span id="reg-bloco"></span></h2>
+          <div class="apoios" id="apoios"></div>
+          <label class="pequeno">Observações do bloco
+            <textarea id="notas-bloco" rows="4" placeholder="Condições, barreiras, como iniciou, efeito dos apoios…"></textarea>
+          </label>
+          <div id="salvo-notas" class="muted pequeno"></div>
+
+          <h2 class="mt">Tempo real</h2>
+          <div id="metricas" class="metricas"></div>
+          <ol id="log" class="log"></ol>
+
+          <button id="btn-encerrar" class="perigo largo-btn">Encerrar encontro…</button>
+        </section>
+      </div>
+    </main>
+
+    <!-- ================= ENCERRAMENTO ================= -->
+    <dialog id="dlg-encerrar">
+      <form id="form-encerrar" method="dialog">
+        <h2>Encerrar encontro</h2>
+        <fieldset>
+          <legend>Referência descritiva de participação (descreve o encontro, não classifica a pessoa)</legend>
+          <label class="radio"><input type="radio" name="participacao" value="1" /> <b>1</b> Participação muito limitada</label>
+          <label class="radio"><input type="radio" name="participacao" value="2" /> <b>2</b> Participação breve</label>
+          <label class="radio"><input type="radio" name="participacao" value="3" /> <b>3</b> Participação oscilante</label>
+          <label class="radio"><input type="radio" name="participacao" value="4" /> <b>4</b> Participação consistente</label>
+          <label class="radio"><input type="radio" name="participacao" value="5" /> <b>5</b> Participação sustentada e ativa</label>
+        </fieldset>
+        <fieldset class="desconforto">
+          <legend>Desconforto com o óculos — pergunte de forma simples; crianças nem sempre relatam sozinhas</legend>
+          <label class="radio"><input type="checkbox" name="desconfortoNenhum" /> Nenhum desconforto relatado</label>
+          <div class="sintomas">
+            <label class="radio"><input type="checkbox" name="sintomas" value="enjoo" /> Enjoo</label>
+            <label class="radio"><input type="checkbox" name="sintomas" value="tontura" /> Tontura</label>
+            <label class="radio"><input type="checkbox" name="sintomas" value="dor-de-cabeca" /> Dor de cabeça</label>
+            <label class="radio"><input type="checkbox" name="sintomas" value="cansaco-visual" /> Cansaço nos olhos</label>
+            <label class="radio"><input type="checkbox" name="sintomas" value="visao-dupla" /> Visão dupla</label>
+            <label class="radio"><input type="checkbox" name="sintomas" value="peso-ajuste" /> Peso ou ajuste do óculos</label>
+            <label class="radio"><input type="checkbox" name="sintomas" value="outro" /> Outro</label>
+          </div>
+          <input name="desconfortoObs" maxlength="1000" placeholder="Observação (quando começou, quanto durou…)" />
+          <div id="erro-desconforto" class="erro-form" hidden>Marque "Nenhum desconforto relatado" ou pelo menos um sintoma.</div>
+        </fieldset>
+        <label>Resultado demonstrado (registre separado da participação)
+          <textarea name="resultadoDemonstrado" rows="3"></textarea>
+        </label>
+        <label>Percepção da pessoa sobre o encontro
+          <textarea name="percepcaoPessoa" rows="2"></textarea>
+        </label>
+        <label>Continuidade planejada
+          <textarea name="continuidade" rows="2"></textarea>
+        </label>
+        <div class="botoes">
+          <button value="cancelar" class="secundario" formnovalidate>Cancelar</button>
+          <button value="ok" class="perigo">Encerrar e salvar</button>
+        </div>
+      </form>
+    </dialog>
+
+    <script src="/privado/terapeuta.js"></script>
+  </body>
+</html>

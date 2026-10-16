@@ -1,0 +1,69 @@
+{
+  "name": "[TRIGGER] VR Botão Sala",
+  "nodes": [
+    {
+      "id": "a1f0c0de-0001-4000-8000-000000000001",
+      "name": "Webhook Botão VR",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [0, 0],
+      "webhookId": "7c1d2e3f-4a5b-4c6d-8e7f-90a1b2c3d4e5",
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "vr-botao",
+        "authentication": "headerAuth",
+        "responseMode": "responseNode",
+        "options": {}
+      }
+    },
+    {
+      "id": "a1f0c0de-0002-4000-8000-000000000002",
+      "name": "Preparar Evento",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [240, 0],
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            { "id": "f1", "name": "evento", "value": "={{ $json.body.evento }}", "type": "string" },
+            { "id": "f2", "name": "botao", "value": "={{ $json.body.botao ?? 'principal' }}", "type": "string" },
+            { "id": "f3", "name": "sala", "value": "={{ $json.body.sala }}", "type": "string" },
+            { "id": "f4", "name": "usuario", "value": "={{ $json.body.usuario ?? 'anonimo' }}", "type": "string" },
+            { "id": "f5", "name": "recebido_em", "value": "={{ $now.toISO() }}", "type": "string" }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "a1f0c0de-0003-4000-8000-000000000003",
+      "name": "Responder para Sala VR",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [480, 0],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { ok: true, mensagem: 'n8n recebeu, ' + $json.usuario + '!', recebido_em: $json.recebido_em } }}",
+        "options": {}
+      }
+    },
+    {
+      "id": "a1f0c0de-0004-4000-8000-000000000004",
+      "name": "Nota",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [-60, -260],
+      "parameters": {
+        "width": 620,
+        "height": 220,
+        "content": "## Botão da Sala VR\nRecebe POST do servidor da sala (`/api/acionar`).\n\n- **Auth:** Header Auth → nome `X-VR-Secret`, valor = `N8N_WEBHOOK_SECRET` do `.env`\n- **Payload:** `evento, botao, sala, usuario, timestamp`\n- A mensagem em `mensagem` aparece no painel 3D da sala.\n- Plugue sua lógica (Supabase, WhatsApp, agente IA…) entre *Preparar Evento* e *Responder*."
+      }
+    }
+  ],
+  "connections": {
+    "Webhook Botão VR": { "main": [[{ "node": "Preparar Evento", "type": "main", "index": 0 }]] },
+    "Preparar Evento": { "main": [[{ "node": "Responder para Sala VR", "type": "main", "index": 0 }]] }
+  },
+  "settings": { "executionOrder": "v1" }
+}
