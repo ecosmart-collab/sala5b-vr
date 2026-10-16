@@ -37,6 +37,9 @@ app.use((_req, res, next) => {
 });
 app.use(express.json({ limit: "20kb" }));
 app.use(express.static(path.join(__dirname, "public")));
+// Bibliotecas servidas pelo próprio servidor (sem depender de CDN)
+app.use("/vendor/aframe", express.static(path.join(__dirname, "node_modules/aframe/dist"), { maxAge: "7d" }));
+app.use("/vendor/aframe-extras", express.static(path.join(__dirname, "node_modules/aframe-extras/dist"), { maxAge: "7d" }));
 app.use("/vendor/troika", express.static(path.join(__dirname, "node_modules/aframe-troika-text/dist")));
 app.use("/vendor/fonte", express.static(path.join(__dirname, "node_modules/@fontsource/atkinson-hyperlegible/files")));
 app.use("/vendor/naf", express.static(path.join(__dirname, "node_modules/networked-aframe/dist")));
