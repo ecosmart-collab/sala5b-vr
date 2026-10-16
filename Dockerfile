@@ -18,7 +18,8 @@ VOLUME ["/data"]
 EXPOSE 8080
 
 USER node
+# PORT pode ser trocada pelo Easypanel: a verificação segue a porta real
 HEALTHCHECK --interval=30s --timeout=5s --start-period=15s \
-  CMD wget -qO- http://127.0.0.1:8080/api/health || exit 1
+  CMD wget -qO- "http://127.0.0.1:${PORT}/api/health" || exit 1
 
 CMD ["node", "server.js"]
